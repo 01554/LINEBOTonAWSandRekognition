@@ -7,7 +7,7 @@ LINEから画像を送ると AWS の Rekognition に渡して 画像のタグと
 ```
 $ mkdir linebot
 $ cd !*
-$ wget 
+$ wget https://raw.githubusercontent.com/sishinami/LINEBOTonAWSandRekognition/master/lambda_function.py
 $ pip install request -t .
 $ zip -r reko *
 ```
