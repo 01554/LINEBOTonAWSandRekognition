@@ -26,9 +26,13 @@ ACCESS_TOKENは LINE Developerから取得できる ACCESS_TOKENです
 
 role には S3と Rekognitionへのアクセス権限を付与してください。
 
+LINE Developerに API Gateway のURLを 登録して終わりです
+
+もうちょい解説を増やしました
+
+<http://sysop.hatenablog.com/entry/2017/02/08/190639>
 
 
-LINE Developerに API Gateway のURLを 登録
 
 
 
