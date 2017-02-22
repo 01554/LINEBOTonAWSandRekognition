@@ -13,11 +13,16 @@ print('Loading function')
 
 # ref https://devdocs.line.me/ja/#reply-message
 REQUEST_URL = 'https://api.line.me/v2/bot/message/reply'
+DOCOMO_ZATUDANAI = 'https://api.apigw.smt.docomo.ne.jp/dialogue/v1/dialogue?APIKEY=' + os.environ['DOCOMO_APIKEY']
 
 REQUEST_HEADERS = {
   'Authorization': 'Bearer ' + os.environ['ACCESS_TOKEN'],
   'Content-type': 'application/json'
 }
+DOCOMO_HEADERS = {
+  'Content-type': 'application/json'
+}
+
 
 GET_CONTENT_URL = 'https://api.line.me/v2/bot/message/%s/content'
 
@@ -94,6 +99,18 @@ def getContent(id,output):
       f.close()
       
       
+def getDocomoAI(userID,utt):
+    request_body = {
+        "utt":utt,
+        "context":userID
+    }
+    response = requests.post(DOCOMO_ZATUDANAI, headers=DOCOMO_HEADERS, data=json.dumps(request_body))
+    print(response)
+    print(response.text)
+    res_body = response.json()
+    print(res_body)
+    return res_body['utt']
+    
 def lambda_handler(event, context):
   print(event)
   print(context)
@@ -105,11 +122,13 @@ def lambda_handler(event, context):
     request_body = {}
     
     if message['type'] == 'text':
+      userId  = event['source']['userId']
+      
       request_body = {
         "replyToken": reply_token,
         "messages" : [{
             "type" : "text",
-            "text" : message['text']
+            "text" : getDocomoAI(userId,message['text'])
             }]
         }
     elif message['type'] == 'image':
@@ -152,5 +171,6 @@ def lambda_handler(event, context):
 
     response = requests.post(REQUEST_URL, headers=REQUEST_HEADERS, data=json.dumps(request_body))
     print(response)
+
 
 
