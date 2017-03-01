@@ -92,38 +92,56 @@ def getRekognitaion(bucket, key):
         raise e
         
 def getContent(id,output):
-    response = requests.get(GET_CONTENT_URL % id , headers=GET_CONTENT_HEADER)
-    if response.status_code == 200:
-      f = open(output, 'w')
-      f.write(response.content)
-      f.close()
-      
-      
+  """
+  getContent refs https://devdocs.line.me/ja/#content
+  Lambda では tmp ディレクトリが使えるので、tmpに保存します
+  ただし、tmp 以下は 他プロジェクトと名前被り等ありえるので
+  本番運用時は注意が必要
+  """
+  response = requests.get(GET_CONTENT_URL % id , headers=GET_CONTENT_HEADER)
+  if response.status_code == 200:
+    f = open(output, 'w')
+    f.write(response.content)
+    f.close()
+
+
+
 def getDocomoAI(userID,utt):
-    request_body = {
-        "utt":utt,
-        "context":userID
-    }
-    response = requests.post(DOCOMO_ZATUDANAI, headers=DOCOMO_HEADERS, data=json.dumps(request_body))
-    print(response)
-    print(response.text)
-    res_body = response.json()
-    print(res_body)
-    return res_body['utt']
+  """
+  refs https://dev.smt.docomo.ne.jp?p=docs.api.page&api_name=dialogue&p_name=api_1#tag01
+
+  """
+  request_body = {
+      "utt":utt,
+      "context":userID
+  }
+  response = requests.post(DOCOMO_ZATUDANAI, headers=DOCOMO_HEADERS, data=json.dumps(request_body))
+  res_body = response.json()
+  return res_body['utt']
     
+
 def lambda_handler(event, context):
+  """
+  main function
+  """
   print(event)
   print(context)
+  
+  # refs https://devdocs.line.me/ja/#webhooks
   body = json.loads(event['body'])
   for event in body['events']:
+    # refs https://devdocs.line.me/ja/#reply-message
     reply_token = event['replyToken']
     message = event['message']
     
     request_body = {}
     
+    # メッセージタイプ refs https://devdocs.line.me/ja/#webhook-event-object
+    # field message
     if message['type'] == 'text':
       userId  = event['source']['userId']
-      
+
+      # text message request_body refs https://devdocs.line.me/ja/#reply-message
       request_body = {
         "replyToken": reply_token,
         "messages" : [{
@@ -132,24 +150,29 @@ def lambda_handler(event, context):
             }]
         }
     elif message['type'] == 'image':
-      
       getContent(message['id'],'/tmp/'+message['id'])
+
+      # S3へ一旦保存してから Rekognitaionに回します
+      # この時 Rekognitaion は 東京リージョンでは動作しない（2017年2月現在)ので S3のリージョンをオレゴン等アメリカにしておきます
       s3_client = boto3.client('s3',region_name='us-west-2')
-      
       s3_client.upload_file('/tmp/'+message['id'], os.environ['S3_BUCKET'], message['id'])
 
-      
+      # tmp以下消去
       os.remove('/tmp/'+message['id'])
 
       
       response = getRekognitaion(os.environ['S3_BUCKET'],message['id'])
-      print(type(response['Labels']))
+
+      print(response)
+      # Detecting Labels refs http://docs.aws.amazon.com/rekognition/latest/dg/howitworks-labeling.html#howitworks-detecting-labels
       labels_text = ""
       for label_str in response['Labels']:
           label = label_str
           print(type(label))
           print(label)
           labels_text = labels_text + label['Name'] + "    "
+
+      # LINE へ返却
       request_body = {
         "replyToken": reply_token,
         "messages" : [{
@@ -168,7 +191,12 @@ def lambda_handler(event, context):
             }]
         }
 
-
+    # 本番運用では 画像解析にかかる時間を短く見せるため
+    # L      -> Webhook -> λ
+    # I      <---------    λ  
+    # N                    λ --> 別λ
+    # E     <-----------------   別λ
+    # というピタゴラスイッチにした方がレスポンスが早くなっているように見えてよい
     response = requests.post(REQUEST_URL, headers=REQUEST_HEADERS, data=json.dumps(request_body))
     print(response)
 
