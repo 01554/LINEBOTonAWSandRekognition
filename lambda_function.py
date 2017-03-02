@@ -193,12 +193,20 @@ def lambda_handler(event, context):
 
     # 本番運用では 画像解析にかかる時間を短く見せるため
     # L      -> Webhook -> λ
-    # I      <---------    λ  
+    # I      <- reply      λ  
     # N                    λ --> 別λ
-    # E     <-----------------   別λ
+    # E     <---- push --------   別λ
     # というピタゴラスイッチにした方がレスポンスが早くなっているように見えてよい
     response = requests.post(REQUEST_URL, headers=REQUEST_HEADERS, data=json.dumps(request_body))
     print(response)
 
+"""
+# push message
+refs <https://devdocs.line.me/ja/#push-message>
 
+送信先識別子は <https://devdocs.line.me/ja/#webhooks>  の `"source"{"userId":XXXXXX}`
+
+push できない時は、LINE MessangerAPIのプランがフリー以外（無料枠ならDevelop trial）になっているか確認
+
+"""
 
