@@ -17,7 +17,7 @@ $ zip -r reko *
 Lambdaがよくわからない人は、Bluprintの microhttp-service で作ってください  
 自動的に API Gatewayが選択され、勝手に HTTP end pointが作られます  
 
-画像会席のためには環境変数に 
+画像解析のためには環境変数に 
 
 S3_BUCKET と ACCESS_TOKEN の二つを設定してください。
 
@@ -32,10 +32,6 @@ DOCOMO_APIKEY を設定してください。
 
 後は
 LINE Developerに API Gateway のURLを 登録して終わりです
-
-もうちょい解説を増やしました（ドコモとかラインの画面については説明ありません、登録するだけだから！がんばって！）
-
-<http://sysop.hatenablog.com/entry/2017/02/08/190639>
 
 
 
